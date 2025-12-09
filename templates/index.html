@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SongTrans - AI Lyrics Translation</title>
+    <style>
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --bg-primary: white;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --border-color: #ddd;
+            --border-light: #f0f0f0;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+        
+        [data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #0f0f1e;
+            --bg-primary: #16213e;
+            --bg-secondary: #0f1419;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border-color: #374151;
+            --border-light: #1f2937;
+            --shadow: rgba(0, 0, 0, 0.6);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px var(--shadow);
+            overflow: visible;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .search-section {
+            padding: 40px;
+            background: #f8f9fa;
+            overflow: visible;
+            position: relative;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .input-group {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        input, select, button {
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+        }
+        
+        input, select {
+            width: 100%;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        input:focus, select:focus {
+            border-color: #667eea;
+        }
+        
+        .autocomplete-dropdown {
+            position: absolute;
+            top: calc(100% + 2px);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            z-index: 9999;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            margin-top: -2px;
+        }
+        
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+        
+        .autocomplete-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-item:hover {
+            background: #f0f0ff;
+        }
+        
+        .autocomplete-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        
+        .autocomplete-item-name {
+            font-weight: 500;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .autocomplete-empty {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            font-style: italic;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+            min-width: 150px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            padding: 40px;
+            display: none;
+        }
+        
+        .song-info {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .song-info h2 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .song-info p {
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .sync-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f0ff;
+            border-radius: 10px;
+        }
+        
+        .sync-controls label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #667eea;
+        }
+        
+        .sync-controls input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .metadata-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .metadata-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .metadata-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .metadata-item {
+            flex: 1;
+            min-width: 200px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .metadata-label {
+            font-size: 0.85em;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .metadata-value {
+            font-size: 1em;
+            color: #333;
+            font-weight: 500;
+            word-wrap: break-word;
+        }
+        
+        .lyrics-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .lyrics-column {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .lyrics-column h3 {
+            margin-bottom: 20px;
+            color: #667eea;
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+        
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        
+        .copy-btn.copied {
+            background: #10b981;
+        }
+        
+        .lyrics-text {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            color: #333;
+        }
+        
+        .lyrics-line {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .lyrics-line:hover {
+            background-color: #f0f0ff;
+        }
+        
+        .lyrics-line.highlighted {
+            background-color: #e0e7ff;
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+        }
+        
+        .lyrics-line:last-child {
+            border-bottom: none;
+        }
+        
+        .line-number {
+            min-width: 30px;
+            color: #999;
+            font-size: 0.9em;
+            font-weight: 500;
+            text-align: right;
+            user-select: none;
+        }
+        
+        .line-text {
+            flex: 1;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 40px;
+            display: none;
+        }
+        
+        .vocab-mode {
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .vocab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .vocab-progress {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+        
+        .flashcard {
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            margin: 20px auto;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+        
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .flashcard-back {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transform: rotateY(180deg);
+            border: 2px solid #667eea;
+        }
+        
+        .flashcard-word {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .flashcard-context {
+            font-size: 1em;
+            font-style: italic;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        
+        .flashcard-translation {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .flashcard-example {
+            font-size: 1em;
+            font-style: italic;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        
+        .vocab-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .vocab-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .vocab-btn.know {
+            background: #10b981;
+            color: white;
+        }
+        
+        .vocab-btn.learning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .vocab-btn.skip {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        @media (max-width: 768px) {
+            .lyrics-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .flashcard {
+                height: 250px;
+            }
+            
+            .flashcard-word {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+                <button onclick="toggleDarkMode()" style="min-width: auto; padding: 10px 15px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);" title="Toggle dark mode">
+                    🌙/☀️
+                </button>
+                <button onclick="adjustFontSize(-2)" style="min-width: auto; padding: 10px 15px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);" title="Decrease font size">
+                    A-
+                </button>
+                <button onclick="adjustFontSize(2)" style="min-width: auto; padding: 10px 15px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);" title="Increase font size">
+                    A+
+                </button>
+            </div>
+            <h1>🎵 SongTrans</h1>
+            <p>AI-Powered Song Lyrics Translation</p>
+        </div>
+        
+        <div class="search-section">
+            <form class="search-form" id="searchForm">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="artistSearch" 
+                        placeholder="Search for artist..." 
+                        autocomplete="off"
+                        required
+                    >
+                    <div class="autocomplete-dropdown" id="artistDropdown"></div>
+                </div>
+                
+                <select id="albumSelect" disabled>
+                    <option value="">Select album...</option>
+                </select>
+                
+                <select id="songSelect" disabled>
+                    <option value="">Select song...</option>
+                </select>
+                
+                <select id="targetLanguage">
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="German">German</option>
+                    <option value="Italian">Italian</option>
+                    <option value="Portuguese">Portuguese</option>
+                    <option value="Japanese">Japanese</option>
+                    <option value="Korean">Korean</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Russian">Russian</option>
+                </select>
+                
+                <button type="submit" disabled>Translate</button>
+            </form>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Fetching and translating lyrics...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="results" id="results">
+            <div class="song-info">
+                <h2 id="songTitle"></h2>
+                <p id="songArtist"></p>
+            </div>
+            
+            <div class="metadata-section" id="metadataSection" style="display: none;">
+                <div class="metadata-title">📝 Song Information</div>
+                <div class="metadata-content" id="metadataContent"></div>
+            </div>
+            
+            <div class="sync-controls">
+                <label>
+                    <input type="checkbox" id="syncScroll" checked>
+                    <span>Sync scrolling (line-by-line)</span>
+                </label>
+                <button onclick="toggleVocabMode()" class="vocab-btn" style="background: #667eea; color: white;">
+                    🎴 Vocabulary Mode
+                </button>
+            </div>
+            
+            <div class="vocab-mode" id="vocabMode" style="display: none;">
+                <div class="vocab-header">
+                    <div>
+                        <h3 style="color: #667eea; margin: 0;">🎴 Vocabulary Flashcards</h3>
+                        <div id="vocabStats" style="font-size: 0.85em; color: var(--text-secondary); margin-top: 5px;"></div>
+                    </div>
+                    <div class="vocab-progress" id="vocabProgress">0 / 0</div>
+                </div>
+                
+                <div class="flashcard" id="flashcard" onclick="flipCard()">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <div class="flashcard-word" id="cardWord">Word</div>
+                            <div class="flashcard-context">Click to reveal translation</div>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="flashcard-translation" id="cardTranslation">Translation</div>
+                            <div class="flashcard-example" id="cardExample">Example context</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="vocab-controls">
+                    <button class="vocab-btn know" onclick="markCard('know')">✓ I Know This <span style="opacity: 0.7; font-size: 0.85em;">(1)</span></button>
+                    <button class="vocab-btn learning" onclick="markCard('learning')">📚 Still Learning <span style="opacity: 0.7; font-size: 0.85em;">(2)</span></button>
+                    <button class="vocab-btn skip" onclick="nextCard()">→ Skip <span style="opacity: 0.7; font-size: 0.85em;">(3)</span></button>
+                </div>
+                
+                <div style="text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--text-tertiary);">
+                    <span style="opacity: 0.8;">⌨️ Shortcuts: Space=Flip | →/N=Next | 1=Know | 2=Learning | 3=Skip</span>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="exportVocabularyCSV()" style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;" title="Export all vocabulary to CSV">
+                        📥 Export CSV
+                    </button>
+                    <button onclick="exportVocabularyAnki()" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;" title="Export vocabulary for Anki">
+                        🎴 Export Anki
+                    </button>
+                    <button onclick="toggleVocabMode()" style="background: var(--border-color); color: var(--text-primary); padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;">
+                        ← Back to Lyrics
+                    </button>
+                </div>
+            </div>
+            
+            <div class="lyrics-container">
+                <div class="lyrics-column">
+                    <h3>
+                        <span>Original</span>
+                        <button class="copy-btn" id="copyOriginal" title="Copy original lyrics">
+                            📋 Copy
+                        </button>
+                    </h3>
+                    <div class="lyrics-text" id="originalLyrics"></div>
+                </div>
+                <div class="lyrics-column">
+                    <h3>
+                        <span id="translatedHeader">Translated</span>
+                        <button class="copy-btn" id="copyTranslated" title="Copy translated lyrics">
+                            📋 Copy
+                        </button>
+                    </h3>
+                    <div class="lyrics-text" id="translatedLyrics"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('searchForm');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        const artistSearch = document.getElementById('artistSearch');
+        const artistDropdown = document.getElementById('artistDropdown');
+        const albumSelect = document.getElementById('albumSelect');
+        const songSelect = document.getElementById('songSelect');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        let selectedArtistId = null;
+        let selectedArtistName = null;
+        let selectedSongId = null;
+        let artistSearchTimeout = null;
+        let allAlbums = [];
+        
+        // Show popular artists on focus if input is empty
+        artistSearch.addEventListener('focus', (e) => {
+            const query = e.target.value.trim();
+            if (query.length === 0) {
+                searchArtists('');
+            }
+        });
+        
+        // Search artists function
+        async function searchArtists(query) {
+            try {
+                const response = await fetch(`/api/search-artists?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.artists && data.artists.length > 0) {
+                    displayArtistDropdown(data.artists);
+                } else {
+                    artistDropdown.innerHTML = '<div class="autocomplete-empty">No artists found</div>';
+                    artistDropdown.classList.add('show');
+                    artistDropdown.style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Error searching artists:', err);
+                artistDropdown.classList.remove('show');
+                artistDropdown.style.display = 'none';
+            }
+        }
+        
+        // Artist autocomplete
+        artistSearch.addEventListener('input', (e) => {
+            clearTimeout(artistSearchTimeout);
+            const query = e.target.value.trim();
+            
+            // Allow searching with any input length
+            artistSearchTimeout = setTimeout(() => searchArtists(query), 300);
+        });
+        
+        function displayArtistDropdown(artists) {
+            artistDropdown.innerHTML = '';
+            
+            console.log(`Displaying ${artists.length} artists`);
+            
+            artists.forEach(artist => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                
+                if (artist.image_url) {
+                    const img = document.createElement('img');
+                    img.src = artist.image_url;
+                    img.alt = artist.name;
+                    img.onerror = function() { this.style.display = 'none'; };
+                    item.appendChild(img);
+                }
+                
+                const name = document.createElement('span');
+                name.className = 'autocomplete-item-name';
+                name.textContent = artist.name;
+                item.appendChild(name);
+                
+                item.addEventListener('click', () => selectArtist(artist));
+                artistDropdown.appendChild(item);
+            });
+            
+            artistDropdown.classList.add('show');
+            artistDropdown.style.display = 'block';
+        }
+        
+        async function selectArtist(artist) {
+            selectedArtistId = artist.id;
+            selectedArtistName = artist.name;
+            artistSearch.value = artist.name;
+            artistDropdown.classList.remove('show');
+            artistDropdown.style.display = 'none';
+            
+            // Reset subsequent dropdowns
+            albumSelect.innerHTML = '<option value="">Loading albums...</option>';
+            albumSelect.disabled = true;
+            songSelect.innerHTML = '<option value="">Select song...</option>';
+            songSelect.disabled = true;
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/artist-albums?artist_id=${artist.id}&artist_name=${encodeURIComponent(artist.name)}`);
+                const data = await response.json();
+                
+                if (data.albums && data.albums.length > 0) {
+                    allAlbums = data.albums;
+                    populateAlbumDropdown(data.albums);
+                } else {
+                    albumSelect.innerHTML = '<option value="">No albums found</option>';
+                }
+            } catch (err) {
+                console.error('Error fetching albums:', err);
+                albumSelect.innerHTML = '<option value="">Error loading albums</option>';
+            }
+        }
+        
+        function populateAlbumDropdown(albums) {
+            albumSelect.innerHTML = '<option value="">Select album...</option>';
+            
+            albums.forEach((album) => {
+                const option = document.createElement('option');
+                option.value = album.id || album.name;
+                option.textContent = album.name;
+                albumSelect.appendChild(option);
+            });
+            
+            albumSelect.disabled = false;
+        }
+        
+        // Album selection
+        albumSelect.addEventListener('change', async (e) => {
+            const albumId = e.target.value;
+            
+            if (!albumId) {
+                songSelect.innerHTML = '<option value="">Select song...</option>';
+                songSelect.disabled = true;
+                submitBtn.disabled = true;
+                return;
+            }
+            
+            // Fetch songs for this album
+            songSelect.innerHTML = '<option value="">Loading songs...</option>';
+            songSelect.disabled = true;
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/album-songs?artist_id=${selectedArtistId}&album_id=${encodeURIComponent(albumId)}&artist_name=${encodeURIComponent(selectedArtistName)}`);
+                const data = await response.json();
+                
+                if (data.songs && data.songs.length > 0) {
+                    populateSongDropdown(data.songs);
+                } else {
+                    songSelect.innerHTML = '<option value="">No songs found</option>';
+                }
+            } catch (err) {
+                console.error('Error fetching songs:', err);
+                songSelect.innerHTML = '<option value="">Error loading songs</option>';
+            }
+        });
+        
+        function populateSongDropdown(songs) {
+            songSelect.innerHTML = '<option value="">Select song...</option>';
+            
+            songs.forEach(song => {
+                const option = document.createElement('option');
+                option.value = song.id;
+                option.textContent = song.title;
+                songSelect.appendChild(option);
+            });
+            
+            songSelect.disabled = false;
+        }
+        
+        // Song selection
+        songSelect.addEventListener('change', (e) => {
+            selectedSongId = e.target.value;
+            submitBtn.disabled = !selectedSongId;
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!artistSearch.contains(e.target) && !artistDropdown.contains(e.target)) {
+                artistDropdown.classList.remove('show');
+                artistDropdown.style.display = 'none';
+            }
+        });
+        
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedSongId) return;
+            
+            const targetLanguage = document.getElementById('targetLanguage').value;
+            
+            // Reset UI
+            error.style.display = 'none';
+            results.style.display = 'none';
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        song_id: selectedSongId,
+                        target_language: targetLanguage
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Something went wrong');
+                }
+                
+                // Display results
+                document.getElementById('songTitle').textContent = data.title;
+                document.getElementById('songArtist').textContent = data.artist;
+                displayLyrics(data.original_lyrics, data.translated_lyrics);
+                displayMetadata();
+                document.getElementById('translatedHeader').textContent = `Translated (${data.target_language})`;
+                
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                
+                // Setup sync scrolling
+                setupSyncScrolling();
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                
+                // Check if lyrics were fetched but translation failed
+                if (err.message.includes('Translation failed') || err.message.includes('unavailable')) {
+                    // Offer to show original lyrics only
+                    if (confirm('Translation is unavailable for this song. Would you like to view the original lyrics only?')) {
+                        // Display original lyrics on both sides
+                        const response = await fetch('/api/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                song_id: selectedSongId,
+                                target_language: 'original_only'
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        if (data.original_lyrics) {
+                            document.getElementById('songTitle').textContent = data.title;
+                            document.getElementById('songArtist').textContent = data.artist;
+                            displayLyrics(data.original_lyrics, data.original_lyrics);
+                            displayMetadata();
+                            document.getElementById('translatedHeader').textContent = 'Original (No Translation Available)';
+                            results.style.display = 'block';
+                            setupSyncScrolling();
+                        } else {
+                            error.textContent = err.message;
+                            error.style.display = 'block';
+                        }
+                    } else {
+                        error.textContent = 'Translation unavailable. Please try another song.';
+                        error.style.display = 'block';
+                    }
+                } else {
+                    error.textContent = err.message;
+                    error.style.display = 'block';
+                }
+            }
+        });
+        
+        // Clean Genius metadata from lyrics and extract metadata
+        function cleanLyrics(lyrics) {
+            const lines = lyrics.split('\n');
+            let startIndex = 0;
+            const metadata = {
+                contributors: '',
+                translations: '',
+                other: []
+            };
+            
+            // Extract and skip common Genius metadata patterns
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const lineLower = line.toLowerCase();
+                
+                // Skip if empty and we haven't found content yet
+                if (line === '') {
+                    startIndex = i + 1;
+                    continue;
+                }
+                
+                // Extract metadata and skip these lines
+                if (lineLower.includes('contributor')) {
+                    metadata.contributors = line;
+                    startIndex = i + 1;
+                } else if (lineLower.includes('translation')) {
+                    metadata.translations = line;
+                    startIndex = i + 1;
+                } else if (lineLower.match(/^\d+\s+contributor/) || 
+                           lineLower.match(/^\d+\s+translation/) ||
+                           lineLower.includes('embed') ||
+                           lineLower.includes('was released') ||
+                           lineLower.includes('read more') ||
+                           lineLower.includes('music video') ||
+                           lineLower.includes('…') ||
+                           lineLower.match(/^lyrics\s*$/)) {
+                    metadata.other.push(line);
+                    startIndex = i + 1;
+                } else {
+                    // Found first real lyrics line (non-empty, non-metadata)
+                    break;
+                }
+            }
+            
+            // Store metadata globally for display
+            window.currentMetadata = metadata;
+            
+            // Return cleaned lyrics, also trim start to remove any leading blank lines
+            return lines.slice(startIndex).join('\n').trimStart();
+        }
+        
+        // Display metadata information
+        function displayMetadata() {
+            const metadataSection = document.getElementById('metadataSection');
+            const metadataContent = document.getElementById('metadataContent');
+            
+            if (!window.currentMetadata) {
+                metadataSection.style.display = 'none';
+                return;
+            }
+            
+            const metadata = window.currentMetadata;
+            metadataContent.innerHTML = '';
+            
+            // Display contributors
+            if (metadata.contributors) {
+                const item = document.createElement('div');
+                item.className = 'metadata-item';
+                item.innerHTML = `
+                    <div class="metadata-label">Contributors</div>
+                    <div class="metadata-value">${metadata.contributors}</div>
+                `;
+                metadataContent.appendChild(item);
+            }
+            
+            // Display translations
+            if (metadata.translations) {
+                const item = document.createElement('div');
+                item.className = 'metadata-item';
+                item.innerHTML = `
+                    <div class="metadata-label">Available Translations</div>
+                    <div class="metadata-value">${metadata.translations}</div>
+                `;
+                metadataContent.appendChild(item);
+            }
+            
+            // Display other metadata
+            if (metadata.other && metadata.other.length > 0) {
+                metadata.other.forEach(info => {
+                    const item = document.createElement('div');
+                    item.className = 'metadata-item';
+                    item.innerHTML = `
+                        <div class="metadata-label">Info</div>
+                        <div class="metadata-value">${info}</div>
+                    `;
+                    metadataContent.appendChild(item);
+                });
+            }
+            
+            // Show section if we have any metadata
+            if (metadataContent.children.length > 0) {
+                metadataSection.style.display = 'block';
+            } else {
+                metadataSection.style.display = 'none';
+            }
+        }
+        
+        // Display lyrics line by line
+        function displayLyrics(originalLyrics, translatedLyrics) {
+            // Clean up Genius metadata headers from both original and translated lyrics
+            originalLyrics = cleanLyrics(originalLyrics);
+            translatedLyrics = cleanLyrics(translatedLyrics);
+            
+            const originalLines = originalLyrics.split('\n');
+            const translatedLines = translatedLyrics.split('\n');
+            
+            // Ensure both have the same number of lines by padding the shorter one
+            const maxLines = Math.max(originalLines.length, translatedLines.length);
+            
+            // Pad arrays to same length
+            while (originalLines.length < maxLines) {
+                originalLines.push('');
+            }
+            while (translatedLines.length < maxLines) {
+                translatedLines.push('');
+            }
+            
+            const originalContainer = document.getElementById('originalLyrics');
+            const translatedContainer = document.getElementById('translatedLyrics');
+            
+            originalContainer.innerHTML = '';
+            translatedContainer.innerHTML = '';
+            
+            for (let i = 0; i < maxLines; i++) {
+                const originalLine = originalLines[i] || '';
+                const translatedLine = translatedLines[i] || '';
+                
+                // Create original line
+                const origDiv = document.createElement('div');
+                origDiv.className = 'lyrics-line';
+                origDiv.dataset.lineNumber = i;
+                origDiv.innerHTML = `
+                    <span class="line-number">${i + 1}</span>
+                    <span class="line-text">${originalLine || '&nbsp;'}</span>
+                `;
+                
+                // Add click handler to highlight both lines
+                origDiv.addEventListener('click', () => highlightLine(i));
+                // Add double-click handler to enter vocab mode
+                origDiv.addEventListener('dblclick', () => enterVocabModeForLine(i));
+                originalContainer.appendChild(origDiv);
+                
+                // Create translated line
+                const transDiv = document.createElement('div');
+                transDiv.className = 'lyrics-line';
+                transDiv.dataset.lineNumber = i;
+                transDiv.innerHTML = `
+                    <span class="line-number">${i + 1}</span>
+                    <span class="line-text">${translatedLine || '&nbsp;'}</span>
+                `;
+                
+                // Add click handler to highlight both lines
+                transDiv.addEventListener('click', () => highlightLine(i));
+                // Add double-click handler to enter vocab mode
+                transDiv.addEventListener('dblclick', () => enterVocabModeForLine(i));
+                translatedContainer.appendChild(transDiv);
+            }
+        }
+        
+        // Highlight corresponding lines when clicked
+        function highlightLine(lineNumber) {
+            // Remove previous highlights
+            document.querySelectorAll('.lyrics-line.highlighted').forEach(line => {
+                line.classList.remove('highlighted');
+            });
+            
+            // Highlight the clicked line and its corresponding line
+            const originalLines = document.querySelectorAll('#originalLyrics .lyrics-line');
+            const translatedLines = document.querySelectorAll('#translatedLyrics .lyrics-line');
+            
+            if (originalLines[lineNumber]) {
+                originalLines[lineNumber].classList.add('highlighted');
+            }
+            if (translatedLines[lineNumber]) {
+                translatedLines[lineNumber].classList.add('highlighted');
+            }
+            
+            // Scroll both into view smoothly
+            if (originalLines[lineNumber]) {
+                originalLines[lineNumber].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        // Copy lyrics to clipboard
+        function copyLyrics(elementId, buttonId) {
+            const lyricsContainer = document.getElementById(elementId);
+            const button = document.getElementById(buttonId);
+            
+            if (!lyricsContainer) return;
+            
+            // Extract text from all lyrics lines
+            const lines = lyricsContainer.querySelectorAll('.lyrics-line .line-text');
+            const text = Array.from(lines).map(line => line.textContent.trim()).join('\n');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success feedback
+                const originalText = button.innerHTML;
+                button.innerHTML = '✓ Copied!';
+                button.classList.add('copied');
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                button.innerHTML = '✗ Failed';
+                setTimeout(() => {
+                    button.innerHTML = '📋 Copy';
+                }, 2000);
+            });
+        }
+        
+        // Setup copy button listeners
+        document.getElementById('copyOriginal')?.addEventListener('click', () => {
+            copyLyrics('originalLyrics', 'copyOriginal');
+        });
+        
+        document.getElementById('copyTranslated')?.addEventListener('click', () => {
+            copyLyrics('translatedLyrics', 'copyTranslated');
+        });
+        
+        // Setup synchronized scrolling
+        function setupSyncScrolling() {
+            const originalContainer = document.getElementById('originalLyrics').parentElement;
+            const translatedContainer = document.getElementById('translatedLyrics').parentElement;
+            const syncCheckbox = document.getElementById('syncScroll');
+            
+            let isScrolling = false;
+            
+            function syncScroll(source, target) {
+                if (!syncCheckbox.checked || isScrolling) return;
+                
+                isScrolling = true;
+                target.scrollTop = source.scrollTop;
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 10);
+            }
+            
+            // Remove any existing listeners
+            originalContainer.onscroll = null;
+            translatedContainer.onscroll = null;
+            
+            // Add sync scroll listeners
+            originalContainer.onscroll = () => syncScroll(originalContainer, translatedContainer);
+            translatedContainer.onscroll = () => syncScroll(translatedContainer, originalContainer);
+        }
+        
+        // Dark mode toggle
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // Load saved theme on page load
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+        
+        // Font size adjustment
+        let currentFontSize = 16;
+        function adjustFontSize(change) {
+            currentFontSize = Math.max(12, Math.min(24, currentFontSize + change));
+            document.querySelectorAll('.lyrics-text, .line-text').forEach(el => {
+                el.style.fontSize = currentFontSize + 'px';
+            });
+            localStorage.setItem('fontSize', currentFontSize);
+        }
+        
+        // Load saved font size
+        (function() {
+            const savedSize = localStorage.getItem('fontSize');
+            if (savedSize) {
+                currentFontSize = parseInt(savedSize);
+                adjustFontSize(0); // Apply saved size
+            }
+        })();
+        
+        // Vocabulary Mode with Knowledge Tracking
+        let vocabCards = [];
+        let currentCardIndex = 0;
+        let vocabProgress = { know: 0, learning: 0, total: 0 };
+        let currentHighlightedLine = null;
+        let showingLineSummary = false;
+        
+        // Vocabulary Knowledge Database (stored in localStorage)
+        class VocabKnowledge {
+            constructor() {
+                this.knowledge = this.load();
+            }
+            
+            load() {
+                const data = localStorage.getItem('vocabKnowledge');
+                return data ? JSON.parse(data) : {};
+            }
+            
+            save() {
+                localStorage.setItem('vocabKnowledge', JSON.stringify(this.knowledge));
+            }
+            
+            getKey(word, targetLang) {
+                return `${word.toLowerCase()}_${targetLang}`;
+            }
+            
+            markAsKnown(word, targetLang) {
+                const key = this.getKey(word, targetLang);
+                const now = Date.now();
+                
+                if (!this.knowledge[key]) {
+                    this.knowledge[key] = {
+                        word: word,
+                        language: targetLang,
+                        level: 1,
+                        lastSeen: now,
+                        timesCorrect: 1,
+                        nextReview: now + (24 * 60 * 60 * 1000) // 1 day
+                    };
+                } else {
+                    // Increase level (spaced repetition)
+                    this.knowledge[key].level++;
+                    this.knowledge[key].timesCorrect++;
+                    this.knowledge[key].lastSeen = now;
+                    
+                    // Calculate next review time based on level
+                    const daysUntilReview = Math.min(Math.pow(2, this.knowledge[key].level), 90); // Max 90 days
+                    this.knowledge[key].nextReview = now + (daysUntilReview * 24 * 60 * 60 * 1000);
+                }
+                
+                this.save();
+            }
+            
+            markAsLearning(word, targetLang) {
+                const key = this.getKey(word, targetLang);
+                const now = Date.now();
+                
+                if (!this.knowledge[key]) {
+                    this.knowledge[key] = {
+                        word: word,
+                        language: targetLang,
+                        level: 0,
+                        lastSeen: now,
+                        timesCorrect: 0,
+                        nextReview: now + (4 * 60 * 60 * 1000) // 4 hours
+                    };
+                } else {
+                    // Don't decrease level, just update last seen
+                    this.knowledge[key].lastSeen = now;
+                    this.knowledge[key].nextReview = now + (4 * 60 * 60 * 1000); // 4 hours
+                }
+                
+                this.save();
+            }
+            
+            shouldShowWord(word, targetLang) {
+                const key = this.getKey(word, targetLang);
+                const wordData = this.knowledge[key];
+                
+                if (!wordData) {
+                    return true; // Always show new words
+                }
+                
+                const now = Date.now();
+                
+                // If it's time for review, show it
+                if (now >= wordData.nextReview) {
+                    return true;
+                }
+                
+                // If known at high level (5+), show rarely (10% chance)
+                if (wordData.level >= 5) {
+                    return Math.random() < 0.1;
+                }
+                
+                // If known at medium level (3-4), show sometimes (30% chance)
+                if (wordData.level >= 3) {
+                    return Math.random() < 0.3;
+                }
+                
+                // If known at low level (1-2), show often (60% chance)
+                if (wordData.level >= 1) {
+                    return Math.random() < 0.6;
+                }
+                
+                return true;
+            }
+            
+            getStats() {
+                const words = Object.values(this.knowledge);
+                return {
+                    total: words.length,
+                    mastered: words.filter(w => w.level >= 5).length,
+                    learning: words.filter(w => w.level > 0 && w.level < 5).length,
+                    new: words.filter(w => w.level === 0).length
+                };
+            }
+        }
+        
+        const vocabKnowledge = new VocabKnowledge();
+        
+        // Detect common 2-3 word phrases in text
+        function detectPhrases(text) {
+            const words = text.split(/\s+/);
+            const phrases = [];
+            
+            // Check for 2-word phrases
+            for (let i = 0; i < words.length - 1; i++) {
+                const word1 = words[i].replace(/[.,!?;:"'()\[\]]/g, '');
+                const word2 = words[i + 1].replace(/[.,!?;:"'()\[\]]/g, '');
+                
+                if (word1.length > 1 && word2.length > 1) {
+                    phrases.push({
+                        phrase: `${word1} ${word2}`,
+                        startIndex: i,
+                        length: 2
+                    });
+                }
+            }
+            
+            // Check for 3-word phrases
+            for (let i = 0; i < words.length - 2; i++) {
+                const word1 = words[i].replace(/[.,!?;:"'()\[\]]/g, '');
+                const word2 = words[i + 1].replace(/[.,!?;:"'()\[\]]/g, '');
+                const word3 = words[i + 2].replace(/[.,!?;:"'()\[\]]/g, '');
+                
+                if (word1.length > 1 && word2.length > 1 && word3.length > 1) {
+                    phrases.push({
+                        phrase: `${word1} ${word2} ${word3}`,
+                        startIndex: i,
+                        length: 3
+                    });
+                }
+            }
+            
+            return phrases;
+        }
+        
+        async function extractVocabularyFromLine(lineNumber) {
+            const originalLines = document.querySelectorAll('#originalLyrics .lyrics-line');
+            const translatedLines = document.querySelectorAll('#translatedLyrics .lyrics-line');
+            
+            if (!originalLines[lineNumber] || !translatedLines[lineNumber]) {
+                return [];
+            }
+            
+            const origText = originalLines[lineNumber].querySelector('.line-text').textContent.trim();
+            const transText = translatedLines[lineNumber].querySelector('.line-text').textContent.trim();
+            
+            if (!origText || !transText) return [];
+            
+            const words = origText.split(/\s+/);
+            
+            // Get target language from the page
+            const targetLang = document.getElementById('targetLanguage').value || 'English';
+            
+            // Detect phrases in the line
+            const detectedPhrases = detectPhrases(origText);
+            
+            // Filter phrases that should be shown
+            const phrasesToTranslate = [];
+            for (const phraseObj of detectedPhrases) {
+                const key = vocabKnowledge.getKey(phraseObj.phrase, targetLang);
+                const phraseData = vocabKnowledge.knowledge[key];
+                
+                // Skip if phrase is well-known (level >= 3)
+                if (phraseData && phraseData.level >= 3) {
+                    continue;
+                }
+                
+                if (vocabKnowledge.shouldShowWord(phraseObj.phrase, targetLang)) {
+                    phrasesToTranslate.push(phraseObj.phrase);
+                }
+            }
+            
+            // Filter words that should be shown based on knowledge tracking
+            // Skip words that are already known (level >= 3)
+            const wordsToTranslate = [];
+            for (const word of words) {
+                const cleanWord = word.replace(/[.,!?;:"'()\[\]]/g, '');
+                if (cleanWord.length > 1) {
+                    const key = vocabKnowledge.getKey(cleanWord, targetLang);
+                    const wordData = vocabKnowledge.knowledge[key];
+                    
+                    // Skip if word is well-known (level >= 3), but still use shouldShowWord for others
+                    if (wordData && wordData.level >= 3) {
+                        continue; // Skip known words
+                    }
+                    
+                    if (vocabKnowledge.shouldShowWord(cleanWord, targetLang)) {
+                        wordsToTranslate.push(cleanWord);
+                    }
+                }
+            }
+            
+            // If no words or phrases to show, return early
+            if (wordsToTranslate.length === 0 && phrasesToTranslate.length === 0) {
+                return [];
+            }
+            
+            // Create translation requests for phrases
+            const phrasePromises = phrasesToTranslate.map(async (phrase) => {
+                try {
+                    const response = await fetch('/api/translate-word', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            word: phrase,
+                            context: origText,
+                            target_language: targetLang
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            word: phrase,
+                            translation: data.translation,
+                            context: origText,
+                            status: 'new',
+                            isPhrase: true
+                        };
+                    } else {
+                        return null; // Skip if translation fails
+                    }
+                } catch (error) {
+                    console.error('Error translating phrase:', error);
+                    return null;
+                }
+            });
+            
+            // Create translation requests for individual words
+            const wordPromises = wordsToTranslate.map(async (cleanWord) => {
+                try {
+                    const response = await fetch('/api/translate-word', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            word: cleanWord,
+                            context: origText,
+                            target_language: targetLang
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            word: cleanWord,
+                            translation: data.translation,
+                            context: origText,
+                            status: 'new',
+                            isPhrase: false
+                        };
+                    } else {
+                        // Fallback to line translation if API fails
+                        return {
+                            word: cleanWord,
+                            translation: transText,
+                            context: origText,
+                            status: 'new',
+                            isPhrase: false
+                        };
+                    }
+                } catch (error) {
+                    console.error('Error translating word:', error);
+                    // Fallback to line translation
+                    return {
+                        word: cleanWord,
+                        translation: transText,
+                        context: origText,
+                        status: 'new',
+                        isPhrase: false
+                    };
+                }
+            });
+            
+            // Wait for all translations to complete in parallel
+            const allPromises = [...phrasePromises, ...wordPromises];
+            const results = await Promise.all(allPromises);
+            
+            // Filter out null results (failed phrase translations) and return phrases first, then words
+            const cards = results.filter(card => card !== null);
+            
+            return cards;
+        }
+        
+        async function enterVocabModeForLine(lineNumber) {
+            // Highlight the line first
+            highlightLine(lineNumber);
+            
+            // Enter vocab mode for this line
+            const vocabMode = document.getElementById('vocabMode');
+            const lyricsContainer = document.querySelector('.lyrics-container');
+            
+            currentHighlightedLine = lineNumber;
+            
+            // Show loading state
+            vocabMode.style.display = 'block';
+            lyricsContainer.style.display = 'none';
+            document.getElementById('cardWord').textContent = 'Loading...';
+            document.getElementById('cardTranslation').textContent = 'Translating words...';
+            document.getElementById('cardExample').textContent = 'Please wait';
+            
+            // Extract vocabulary with API calls
+            vocabCards = await extractVocabularyFromLine(lineNumber);
+            vocabProgress = { know: 0, learning: 0, total: vocabCards.length };
+            
+            if (vocabCards.length === 0) {
+                alert('No vocabulary found in this line!');
+                vocabMode.style.display = 'none';
+                lyricsContainer.style.display = 'grid';
+                return;
+            }
+            
+            currentCardIndex = 0;
+            showCard(currentCardIndex);
+            updateProgress();
+        }
+        
+        async function toggleVocabMode() {
+            const vocabMode = document.getElementById('vocabMode');
+            const lyricsContainer = document.querySelector('.lyrics-container');
+            
+            if (vocabMode.style.display === 'none') {
+                // Check if a line is highlighted
+                const highlightedLine = document.querySelector('.lyrics-line.highlighted');
+                if (!highlightedLine) {
+                    alert('Please click on a lyrics line first to study its vocabulary!');
+                    return;
+                }
+                
+                // Enter vocab mode with selected line
+                const lineNumber = parseInt(highlightedLine.dataset.lineNumber);
+                await enterVocabModeForLine(lineNumber);
+            } else {
+                // Exit vocab mode
+                vocabMode.style.display = 'none';
+                lyricsContainer.style.display = 'grid';
+            }
+        }
+        
+        function showCard(index) {
+            if (index >= vocabCards.length) {
+                // All cards done for this line - show the complete line meaning
+                showLineSummary();
+                return;
+            }
+            
+            const card = vocabCards[index];
+            // Front: Large focus word/phrase + smaller full line
+            const wordElement = document.getElementById('cardWord');
+            const translationElement = document.getElementById('cardTranslation');
+            
+            // Add phrase indicator if this is a phrase
+            if (card.isPhrase) {
+                wordElement.textContent = `📝 ${card.word}`;
+                translationElement.textContent = `📝 ${card.translation}`;
+            } else {
+                wordElement.textContent = card.word;
+                translationElement.textContent = card.translation;
+            }
+            
+            // Show full line context smaller below each
+            const frontContext = document.querySelector('.flashcard-front .flashcard-context');
+            const backExample = document.querySelector('.flashcard-back .flashcard-example');
+            frontContext.textContent = card.isPhrase ? `Phrase: "${card.context}"` : `"${card.context}"`;
+            backExample.textContent = card.isPhrase ? `Phrase: "${card.context}"` : `"${card.context}"`;
+            
+            // Reset flip
+            document.getElementById('flashcard').classList.remove('flipped');
+        }
+        
+        function showLineSummary() {
+            // Get the translated line text
+            const translatedLines = document.querySelectorAll('#translatedLyrics .lyrics-line');
+            const originalLines = document.querySelectorAll('#originalLyrics .lyrics-line');
+            
+            showingLineSummary = true;
+            
+            if (translatedLines[currentHighlightedLine] && originalLines[currentHighlightedLine]) {
+                const origText = originalLines[currentHighlightedLine].querySelector('.line-text').textContent.trim();
+                const transText = translatedLines[currentHighlightedLine].querySelector('.line-text').textContent.trim();
+                
+                document.getElementById('cardWord').textContent = '🎯 Line Complete!';
+                document.getElementById('cardTranslation').textContent = transText;
+                document.getElementById('cardExample').textContent = `Original: "${origText}"`;
+                
+                // Auto-flip to show the translation
+                document.getElementById('flashcard').classList.add('flipped');
+            } else {
+                document.getElementById('cardWord').textContent = 'Complete! 🎉';
+                document.getElementById('cardTranslation').textContent = `You've reviewed ${vocabProgress.total} words`;
+                document.getElementById('cardExample').textContent = `Known: ${vocabProgress.know}, Learning: ${vocabProgress.learning}`;
+            }
+        }
+        
+        function flipCard() {
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+        
+        function markCard(status) {
+            if (currentCardIndex < vocabCards.length) {
+                const card = vocabCards[currentCardIndex];
+                card.status = status;
+                
+                // Get target language
+                const targetLang = document.getElementById('targetLanguage').value || 'English';
+                
+                // Save to knowledge base
+                if (status === 'know') {
+                    vocabKnowledge.markAsKnown(card.word, targetLang);
+                    vocabProgress.know++;
+                } else if (status === 'learning') {
+                    vocabKnowledge.markAsLearning(card.word, targetLang);
+                    vocabProgress.learning++;
+                }
+            }
+            nextCard();
+        }
+        
+        async function nextCard() {
+            // If we're showing the line summary, move to next line when user clicks
+            if (showingLineSummary) {
+                showingLineSummary = false;
+                await moveToNextLine();
+                return;
+            }
+            
+            currentCardIndex++;
+            
+            // If we've finished all cards in this line, show summary (don't auto-advance)
+            if (currentCardIndex >= vocabCards.length) {
+                showCard(currentCardIndex);
+                updateProgress();
+            } else {
+                showCard(currentCardIndex);
+                updateProgress();
+            }
+        }
+        
+        async function moveToNextLine() {
+            const originalLines = document.querySelectorAll('#originalLyrics .lyrics-line');
+            const totalLines = originalLines.length;
+            
+            // Find next line with vocabulary to study
+            let nextLineNumber = currentHighlightedLine + 1;
+            let foundLine = false;
+            
+            while (nextLineNumber < totalLines && !foundLine) {
+                // Highlight the next line
+                highlightLine(nextLineNumber);
+                
+                // Show loading state
+                document.getElementById('cardWord').textContent = 'Loading next line...';
+                document.getElementById('cardTranslation').textContent = 'Extracting vocabulary...';
+                document.getElementById('cardExample').textContent = 'Please wait';
+                
+                // Extract vocabulary from this line
+                const newCards = await extractVocabularyFromLine(nextLineNumber);
+                
+                if (newCards.length > 0) {
+                    // Found a line with vocabulary
+                    currentHighlightedLine = nextLineNumber;
+                    vocabCards = newCards;
+                    vocabProgress.total = newCards.length;
+                    currentCardIndex = 0;
+                    foundLine = true;
+                    
+                    showCard(currentCardIndex);
+                    updateProgress();
+                } else {
+                    // No vocabulary in this line, try next
+                    nextLineNumber++;
+                }
+            }
+            
+            if (!foundLine) {
+                // No more lines with vocabulary
+                document.getElementById('cardWord').textContent = 'All Done! 🎉';
+                document.getElementById('cardTranslation').textContent = 'No more lines with new vocabulary';
+                document.getElementById('cardExample').textContent = 'Great job studying!';
+            }
+        }
+        
+        function updateProgress() {
+            const reviewed = vocabProgress.know + vocabProgress.learning;
+            document.getElementById('vocabProgress').textContent = `${reviewed} / ${vocabProgress.total} reviewed`;
+            
+            // Update overall vocabulary stats
+            const stats = vocabKnowledge.getStats();
+            document.getElementById('vocabStats').textContent = 
+                `Total vocabulary: ${stats.total} words (Mastered: ${stats.mastered}, Learning: ${stats.learning}, New: ${stats.new})`;
+        }
+        
+        // Export Vocabulary Functions
+        function exportVocabularyCSV() {
+            const vocab = Object.values(vocabKnowledge.knowledge);
+            
+            if (vocab.length === 0) {
+                alert('No vocabulary to export yet! Start learning some words first.');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Word', 'Language', 'Level', 'Times Correct', 'Last Seen', 'Next Review'];
+            const rows = vocab.map(item => [
+                item.word,
+                item.language,
+                item.level,
+                item.timesCorrect,
+                new Date(item.lastSeen).toLocaleDateString(),
+                new Date(item.nextReview).toLocaleDateString()
+            ]);
+            
+            let csv = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+            
+            // Download file
+            downloadFile(csv, 'songtrans-vocabulary.csv', 'text/csv');
+            
+            // Show success message
+            alert(`Exported ${vocab.length} words to CSV!`);
+        }
+        
+        function exportVocabularyAnki() {
+            const vocab = Object.values(vocabKnowledge.knowledge);
+            
+            if (vocab.length === 0) {
+                alert('No vocabulary to export yet! Start learning some words first.');
+                return;
+            }
+            
+            // Create Anki-compatible TSV (tab-separated)
+            // Format: Front\tBack\tTags
+            let tsv = '';
+            vocab.forEach(item => {
+                const front = item.word;
+                const back = `Level: ${item.level}<br>Times Correct: ${item.timesCorrect}`;
+                const tags = `songtrans ${item.language.toLowerCase()} level${item.level}`;
+                tsv += `${front}\t${back}\t${tags}\n`;
+            });
+            
+            // Download file
+            downloadFile(tsv, 'songtrans-anki-deck.txt', 'text/plain');
+            
+            // Show success message with instructions
+            alert(`Exported ${vocab.length} words for Anki!\n\nTo import:\n1. Open Anki\n2. File → Import\n3. Select the downloaded file\n4. Set Field separator to Tab\n5. Map fields: Front → Front, Back → Back, Tags → Tags`);
+        }
+        
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Keyboard Shortcuts for Flashcards
+        document.addEventListener('keydown', (e) => {
+            // Only handle shortcuts in vocab mode
+            const vocabMode = document.getElementById('vocabMode');
+            if (vocabMode.style.display === 'none') return;
+            
+            // Prevent shortcuts if user is typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.key) {
+                case ' ': // Space - flip card
+                    e.preventDefault();
+                    flipCard();
+                    break;
+                case 'ArrowRight': // Right arrow - next card
+                case 'n':
+                    e.preventDefault();
+                    nextCard();
+                    break;
+                case 'ArrowLeft': // Left arrow - previous card (skip for now)
+                case 'p':
+                    e.preventDefault();
+                    // Previous card not implemented yet
+                    break;
+                case '1': // 1 - mark as known
+                    e.preventDefault();
+                    markCard('know');
+                    break;
+                case '2': // 2 - mark as learning
+                    e.preventDefault();
+                    markCard('learning');
+                    break;
+                case '3': // 3 - skip
+                case 's':
+                    e.preventDefault();
+                    nextCard();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
