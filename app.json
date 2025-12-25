@@ -1,0 +1,26 @@
+{
+  "id": "songtrans",
+  "name": "Song Translator",
+  "description": "Translate song lyrics between languages while preserving rhythm and meaning. Supports multiple languages and music platforms.",
+  "version": "1.0.0",
+  "type": "web",
+  "icon": "🎵",
+  "category": "tools",
+  
+  "web": {
+    "enabled": true,
+    "entry": "app.py",
+    "port": 5101,
+    "framework": "flask",
+    "requirements": "requirements.txt",
+    "venv": "venv",
+    "command": ["python3", "app.py"]
+  },
+  
+  "desktop": {
+    "enabled": false
+  },
+  
+  "tags": ["music", "translation", "lyrics", "language", "tools"]
+}
+
