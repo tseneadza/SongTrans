@@ -5,6 +5,15 @@ Complete documentation for the SongTrans AI-Powered Lyrics Translation applicati
 
 ---
 
+## Product / PRDs
+
+### [PRD: Synced Playback & Lyric Highlighting](./PRD-synced-playback-lyrics.md)
+**Goal:** Play song in browser with lyrics highlighting in sync; option to view lyrics with or without music.
+
+**Covers:** Synced lyrics (LRC/estimation), Spotify Web Playback SDK, highlight engine, “Play music” vs “Lyrics only” toggle, phasing.
+
+---
+
 ## Python Backend Files
 
 ### 1. [app.py](./app.py.md)

@@ -125,8 +125,13 @@ class LyricsService:
         # Remove Genius header junk (Contributors, Translations, etc.)
         lyrics = re.sub(r'^.*?Lyrics', '', lyrics, flags=re.DOTALL)
         
-        # Remove description text that appears before actual lyrics
+        # Remove description/annotation text that appears before actual lyrics.
+        # Genius sometimes includes metadata descriptions (quoted or unquoted)
+        # before the actual lyrics start.
         lyrics = re.sub(r'^".*?".*?(?=\n[A-Z])', '', lyrics, flags=re.DOTALL)
+        # Remove unquoted prose descriptions at the start (long lines with periods
+        # followed by a blank line, e.g. "Released on May 15, 2015. The song is...")
+        lyrics = re.sub(r'^(?:[^\n]{50,}\.[^\n]*\n)+\n', '', lyrics)
         
         # Remove [Verse 1], [Chorus], etc. annotations
         lyrics = re.sub(r'\[.*?\]', '', lyrics)
