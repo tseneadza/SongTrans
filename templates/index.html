@@ -35,7 +35,10 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        
+
+
+        l]scroll-snap-destination: }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -309,6 +312,14 @@
             gap: 30px;
             margin-top: 30px;
         }
+
+        .lyrics-container.view-original {
+            grid-template-columns: 1fr;
+        }
+
+        .lyrics-container.view-translation {
+            grid-template-columns: 1fr;
+        }
         
         .lyrics-column {
             background: #f8f9fa;
@@ -539,13 +550,51 @@
             .lyrics-container {
                 grid-template-columns: 1fr;
             }
-            
+
             .flashcard {
                 height: 250px;
             }
-            
+
             .flashcard-word {
                 font-size: 2em;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            /* Hide everything except the results */
+            .header,
+            .search-section,
+            .loading,
+            .error,
+            .sync-controls,
+            .vocab-mode,
+            .metadata-section,
+            .copy-btn {
+                display: none !important;
+            }
+
+            /* Remove scroll limits so all lyrics print */
+            .lyrics-column {
+                max-height: none !important;
+                overflow: visible !important;
+                page-break-inside: avoid;
+            }
+
+            /* Keep grid layout matching the current view mode */
+            .lyrics-container {
+                display: grid;
+                gap: 20px;
+                margin-top: 10px;
             }
         }
     </style>
@@ -629,6 +678,17 @@
                     <input type="checkbox" id="syncScroll" checked>
                     <span>Sync scrolling (line-by-line)</span>
                 </label>
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.9em; color: var(--text-secondary);">View:</span>
+                    <select id="viewModeSelect" onchange="setViewMode(this.value)" style="padding: 8px 12px; font-size: 0.9em; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                        <option value="side-by-side">Side by Side</option>
+                        <option value="original">Original Only</option>
+                        <option value="translation">Translation Only</option>
+                    </select>
+                </label>
+                <button onclick="window.print()" style="background: #4b5563; color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em;">
+                    🖨️ Print
+                </button>
                 <button onclick="toggleVocabMode()" class="vocab-btn" style="background: #667eea; color: white;">
                     🎴 Vocabulary Mode
                 </button>
@@ -927,7 +987,8 @@
                 
                 loading.style.display = 'none';
                 results.style.display = 'block';
-                
+                setViewMode(localStorage.getItem('viewMode') || 'side-by-side');
+
                 // Setup sync scrolling
                 setupSyncScrolling();
                 
@@ -958,6 +1019,7 @@
                             displayMetadata();
                             document.getElementById('translatedHeader').textContent = 'Original (No Translation Available)';
                             results.style.display = 'block';
+                            setViewMode(localStorage.getItem('viewMode') || 'side-by-side');
                             setupSyncScrolling();
                         } else {
                             error.textContent = err.message;
@@ -1269,6 +1331,38 @@
             }
         })();
         
+        // View mode (side-by-side / original only / translation only)
+        function setViewMode(mode) {
+            const container = document.querySelector('.lyrics-container');
+            const originalCol = document.getElementById('originalLyrics').closest('.lyrics-column');
+            const translatedCol = document.getElementById('translatedLyrics').closest('.lyrics-column');
+
+            container.classList.remove('view-original', 'view-translation');
+
+            if (mode === 'original') {
+                container.classList.add('view-original');
+                originalCol.style.display = '';
+                translatedCol.style.display = 'none';
+            } else if (mode === 'translation') {
+                container.classList.add('view-translation');
+                originalCol.style.display = 'none';
+                translatedCol.style.display = '';
+            } else {
+                originalCol.style.display = '';
+                translatedCol.style.display = '';
+            }
+
+            localStorage.setItem('viewMode', mode);
+        }
+
+        // Restore saved view mode on page load
+        (function() {
+            const savedMode = localStorage.getItem('viewMode') || 'side-by-side';
+            const select = document.getElementById('viewModeSelect');
+            if (select) select.value = savedMode;
+            // Columns may not exist yet (results hidden), apply after results shown
+        })();
+
         // Vocabulary Mode with Knowledge Tracking
         let vocabCards = [];
         let currentCardIndex = 0;

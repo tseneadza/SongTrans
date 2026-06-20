@@ -25,3 +25,8 @@ cache/
 
 # Temporary files
 *.rtf
+.autoclaude/
+.claude_agent_farm_backups/
+.claude_agent_farm_state.json
+.heartbeats/
+.cache
