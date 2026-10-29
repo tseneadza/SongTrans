@@ -4,9 +4,8 @@
   "description": "Translate song lyrics between languages while preserving rhythm and meaning. Supports multiple languages and music platforms.",
   "version": "1.0.0",
   "type": "web",
-  "icon": "🎵",
+  "icon": "\ud83c\udfb5",
   "category": "tools",
-  
   "web": {
     "enabled": true,
     "entry": "app.py",
@@ -14,13 +13,46 @@
     "framework": "flask",
     "requirements": "requirements.txt",
     "venv": "venv",
-    "command": ["python3", "app.py"]
+    "command": [
+      "python3",
+      "app.py"
+    ]
   },
-  
   "desktop": {
     "enabled": false
   },
-  
-  "tags": ["music", "translation", "lyrics", "language", "tools"]
+  "tags": [
+    "music",
+    "translation",
+    "lyrics",
+    "language",
+    "tools"
+  ],
+  "scripts": [
+    {
+      "name": "app",
+      "path": "app.py",
+      "description": "Script: app.py"
+    },
+    {
+      "name": "cache_service",
+      "path": "cache_service.py",
+      "description": "Script: cache_service.py"
+    },
+    {
+      "name": "lyrics_service",
+      "path": "lyrics_service.py",
+      "description": "Script: lyrics_service.py"
+    },
+    {
+      "name": "spotify_service",
+      "path": "spotify_service.py",
+      "description": "Script: spotify_service.py"
+    },
+    {
+      "name": "translation_service",
+      "path": "translation_service.py",
+      "description": "Script: translation_service.py"
+    }
+  ]
 }
-
